@@ -17,6 +17,6 @@ This document records the Raspberry command lines.
 
 
 ## MQTT
-brew services start mosquitto  --start MQTT
-mosquitto_sub -h 192.168.0.153 -t "#" -v -- receive data from raspberrypi
-brew services list
+- `brew services start mosquitto`  --start MQTT
+- `mosquitto_sub -h 192.168.0.153` -t "#" -v -- receive data from raspberrypi
+- `brew services list`
