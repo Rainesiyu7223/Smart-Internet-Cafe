@@ -1,92 +1,118 @@
 import time
 import json
+import paho.mqtt.client as mqtt  # 导入刚刚安装的库
 
 # Import custom modular drivers
-from sensors.tempHumid_sensor import read_temperature_humidity
-from sensors.sound_sensor import setup_sound_pin, read_sound_level
+from sensors.dht_sensor import read_temperature_humidity
+from sensors.noise_sensor import setup_sound_pin, read_sound_level
+from sensors.pir_sensor import setup_pir_pin, read_pir_motion
+from sensors.rotary_sensor import read_rotary_raw
 from actuators.buzzer_actuator import setup_buzzer_pin, trigger_buzzer
 
-# ==================== HARDWARE CONFIGURATION CENTER ====================
+# ==================== HARDWARE & NETWORK CONFIGURATION ====================
 CLIENT_ID = "pi_node_seat_A1"
-MQTT_TOPIC = "cybercafe/seats/A1"
+# ⚡ MQTT 配置：localhost 代表连接树莓派本地刚刚建好的 Mosquitto 邮局
+MQTT_BROKER = "localhost"
+MQTT_PORT = 1883
+MQTT_TOPIC = "cybercafe/seat_A1"
 
-DHT_PIN = 4          # DHT sensor connected to Digital Port D4
-DHT_TYPE = 0         # 0 for Blue DHT11
-SOUND_PIN = 0        # Sound sensor connected to Analog Port A0
-BUZZER_PIN = 3       # Buzzer v1.2 connected to Digital Port D3
-PIR_PIN = 8          # Motion sensor connected to Digital Port D8
-ROTARY_PIN = 1       # Rotary sensor connected to Analog Port A1
+DHT_PIN = 4          
+DHT_TYPE = 0         
+SOUND_PIN = 0        
+BUZZER_PIN = 3       
+PIR_PIN = 8          
+ROTARY_PIN = 1       
 
-# Edge Intelligence Thresholds
-NOISE_THRESHOLD = 300  # Trigger alert if raw sound value exceeds this
+NOISE_THRESHOLD = 400
 # =======================================================================
-
-def collect_all_sensor_data():
-    """Invokes individual sensors and formats telemetry into a dictionary."""
-    temp, hum = read_temperature_humidity(port=DHT_PIN, sensor_type=DHT_TYPE)
-    sound_value = read_sound_level(port=SOUND_PIN)
-    
-    payload = {
-        "client_id": CLIENT_ID,
-        "timestamp": int(time.time()),
-        "environment": {
-            "temperature": temp if temp is not None else 0.0,
-            "humidity": hum if hum is not None else 0.0,
-            "noise_level": sound_value if sound_value is not None else 0
-        },
-        "seat_interact": {
-            "motion_detected": False,
-            "user_target_temp": 25.0
-        },
-        "local_actuators": {
-            "fan_status": "OFF",
-            "buzzer_active": False,   # Will be updated dynamically in main loop
-            "lcd_alert": "Normal"
-        }
-    }
-    return payload
 
 def main():
     print("==================================================")
     print("Smart Cybercafe IoT Edge Node Core Starting...")
-    print("Initializing hardware components...")
+    print("Initializing hardware components & MQTT Client...")
     
-    # Initialize hardware registers
+    # 1. 初始化硬件
     setup_sound_pin(port=SOUND_PIN)
     setup_buzzer_pin(port=BUZZER_PIN)
+    setup_pir_pin(port=PIR_PIN)
+    
+    # 2. 初始化 MQTT 客户端
+    mqtt_client = mqtt.Client(client_id=CLIENT_ID)
+    try:
+        mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+        mqtt_client.loop_start()  # 启动后台线程处理网络通信
+        print("Successfully connected to local MQTT Broker.")
+    except Exception as e:
+        print(f"MQTT Connection Failed: {e}")
+        return
     
     print("\nInitialization sequence complete. Entering tracking loop.")
     print("==================================================\n")
     
     while True:
-        # Step 1: Gather integrated telemetry data
-        telemetry_dict = collect_all_sensor_data()
-        current_noise = telemetry_dict["environment"]["noise_level"]
+        # 🛡️ 强行每轮重置蜂鸣器防止死锁
+        try:
+            from smbus2 import SMBus
+            with SMBus(1) as bus:
+                bus.write_i2c_block_data(0x04, 1, [2, BUZZER_PIN, 0, 0])
+        except Exception:
+            pass
+
+        # Step 1: Telemetry gathering
+        is_occupied = read_pir_motion(port=PIR_PIN)
+        rotary_raw = read_rotary_raw(port=ROTARY_PIN)
+        sound_value = read_sound_level(port=SOUND_PIN)
+        temp, hum = read_temperature_humidity(port=DHT_PIN, sensor_type=DHT_TYPE)
         
-        # Step 2: Edge Local Loop Decision Block (Close-loop control)
-        if current_noise > NOISE_THRESHOLD:
-            print(f"[ALERT] Noise level ({current_noise}) exceeded threshold ({NOISE_THRESHOLD})!")
-            
-            # Update the actuator status inside our telemetry package before serialization
-            telemetry_dict["local_actuators"]["buzzer_active"] = True
-            telemetry_dict["local_actuators"]["lcd_alert"] = "Noise Warning"
-            
-            # Execute hardware action (Beep for 0.3 seconds)
-            trigger_buzzer(port=BUZZER_PIN, duration=0.3)
+        if sound_value is None:
+            current_noise = 0
         else:
-            telemetry_dict["local_actuators"]["buzzer_active"] = False
-            telemetry_dict["local_actuators"]["lcd_alert"] = "Normal"
+            current_noise = sound_value
         
-        # Step 3: Serialize Python dictionary to standard JSON String
-        json_payload = json.dumps(telemetry_dict, indent=2)
+        # Step 2: Construct full-dimensional JSON telemetry payload
+        telemetry_payload = {
+            "client_id": CLIENT_ID,
+            "timestamp": int(time.time()),
+            "environment": {
+                "temperature": temp if temp is not None else 0.0,
+                "humidity": hum if hum is not None else 0.0,
+                "noise_level": current_noise
+            },
+            "seat_interact": {
+                "motion_detected": is_occupied,
+                "rotary_raw_value": rotary_raw
+            },
+            "local_actuators": {
+                "fan_status": "OFF",
+                "buzzer_active": False,
+                "lcd_alert": "Normal"
+            }
+        }
         
-        # Step 4: Local terminal output verification
-        print("[LOCAL VERIFICATION] Serialized Payload:")
-        print(json_payload)
+        # Step 3: Context-Aware Decision Block
+        if is_occupied and current_noise > NOISE_THRESHOLD:
+            print(f"[ALERT] Noise level ({current_noise}) exceeded threshold!")
+            telemetry_payload["local_actuators"]["buzzer_active"] = True
+            telemetry_payload["local_actuators"]["lcd_alert"] = "Noise Warning"
+            trigger_buzzer(port=BUZZER_PIN, duration=0.1)
+            time.sleep(0.5)
+        elif not is_occupied:
+            telemetry_payload["local_actuators"]["lcd_alert"] = "Seat Vacant"
+        else:
+            telemetry_payload["local_actuators"]["lcd_alert"] = "Normal"
+            
+        # Step 4: Serialize to standard JSON String
+        json_output = json.dumps(telemetry_payload, indent=2)
+        
+        # 🚀 Step 5: 把 JSON 实时发布到 MQTT 话题中！
+        try:
+            mqtt_client.publish(MQTT_TOPIC, json_output, qos=0)
+            print(f"[MQTT] Successfully published data frame to {MQTT_TOPIC}")
+        except Exception as e:
+            print(f"[MQTT Error] Failed to publish: {e}")
+        
         print("-" * 50)
-        
-        # Sampling rate throttle
-        time.sleep(1.5)
+        time.sleep(1.0)
 
 if __name__ == "__main__":
     try:
