@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Seat Recommendation | Smart Internet Cafe{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div>
+    <p class="eyebrow">Seat Recommendation</p>
+    <h1>Welcome, {{ reservation["name"] }}.</h1>
+    <p class="lede">Your check-in is complete. Choose from the currently available seats.</p>
+  </div>
+
+  {% if recommended %}
+  <article class="recommendation">
+    <span>Recommended</span>
+    <strong>{{ recommended["code"] }}</strong>
+    <p>{{ recommended["area"] }} · {{ recommended["pc_level"] }} · {{ recommended["noise_level"] }} noise{% if recommended["has_window"] %} · window{% endif %}</p>
+  </article>
+  {% else %}
+  <article class="recommendation">
+    <span>No seats available</span>
+    <strong>Please ask staff</strong>
+    <p>All seats are currently occupied or unavailable.</p>
+  </article>
+  {% endif %}
+</section>
+
+<section class="seat-grid">
+  {% for seat in seats %}
+  <article class="seat-card">
+    <strong>{{ seat["code"] }}</strong>
+    <span>{{ seat["area"] }}</span>
+    <p>{{ seat["pc_level"] }}</p>
+    <small>{{ seat["noise_level"] }} noise{% if seat["has_window"] %} · window{% endif %}</small>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}
