@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Reservation | Smart Internet Cafe{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div>
+    <p class="eyebrow">Online Reservation</p>
+    <h1>Book your visit before arriving.</h1>
+    <p class="lede">Create a reservation with your name, then use the same name at the cafe check-in screen.</p>
+  </div>
+
+  <form id="reservation-form" class="form">
+    <label>
+      Name
+      <input name="name" autocomplete="name" placeholder="Enter your name" required>
+    </label>
+    <label>
+      Phone
+      <input name="phone" autocomplete="tel" placeholder="Optional">
+    </label>
+    <button type="submit">Reserve</button>
+    <p id="reservation-result" class="result" role="status"></p>
+  </form>
+</section>
+{% endblock %}

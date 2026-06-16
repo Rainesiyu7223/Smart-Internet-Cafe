@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Check In | Smart Internet Cafe{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div>
+    <p class="eyebrow">Arrival Check-In</p>
+    <h1>Enter your reservation name.</h1>
+    <p class="lede">The system compares your name with pending reservations in SQLite before recommending seats.</p>
+  </div>
+
+  <form id="checkin-form" class="form">
+    <label>
+      Name
+      <input name="name" autocomplete="name" placeholder="Enter reservation name" required>
+    </label>
+    <button type="submit">Check In</button>
+    <p id="checkin-result" class="result" role="status"></p>
+  </form>
+</section>
+{% endblock %}
