@@ -3,14 +3,17 @@
 {% block title %}Reservation | Smart Internet Cafe{% endblock %}
 
 {% block content %}
-<section class="panel">
-  <div>
+<section class="hero-panel">
+  <div class="hero-copy">
     <p class="eyebrow">Online Reservation</p>
-    <h1>Book your visit before arriving.</h1>
-    <p class="lede">Create a reservation with your name, then use the same name at the cafe check-in screen.</p>
+    <h1>Reserve a gaming seat before you arrive.</h1>
   </div>
 
-  <form id="reservation-form" class="form">
+  <form id="reservation-form" class="form-card">
+    <div class="form-heading">
+      <span class="status-dot"></span>
+      <strong>New booking</strong>
+    </div>
     <label>
       Name
       <input name="name" autocomplete="name" placeholder="Enter your name" required>
@@ -19,7 +22,7 @@
       Phone
       <input name="phone" autocomplete="tel" placeholder="Optional">
     </label>
-    <button type="submit">Reserve</button>
+    <button type="submit">Create reservation</button>
     <p id="reservation-result" class="result" role="status"></p>
   </form>
 </section>
