@@ -144,6 +144,8 @@ def ingest_telemetry(payload: TelemetryPayload) -> dict[str, object]:
 def load_dashboard_data() -> dict[str, object]:
     seat_rows = [dict(row) for row in list_latest_telemetry()]
     remote_rows, error = fetch_remote_telemetry()
+    seat_rows = [row for row in seat_rows if row["code"] == "A01"]
+    remote_rows = [row for row in remote_rows if row.get("code") == "A01"]
     rows = merge_remote_with_seats(seat_rows, remote_rows)
     online_count = sum(1 for row in rows if row["received_at"] is not None)
     return {

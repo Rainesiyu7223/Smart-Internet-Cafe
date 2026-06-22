@@ -16,7 +16,7 @@ Open <http://127.0.0.1:8000>.
 
 ## Dashboard
 
-Open <http://127.0.0.1:8000/dashboard> to view the latest seat temperature and humidity.
+Open <http://127.0.0.1:8000/dashboard> to view the latest A01 seat temperature and humidity.
 
 By default, the dashboard reads live data from Computer A:
 
