@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Smart Internet Cafe{% endblock %}
+{% block extra_head %}<meta http-equiv="refresh" content="5">{% endblock %}
+
+{% block content %}
+<section class="dashboard-hero">
+  <div>
+    <p class="eyebrow">Live Seat Dashboard</p>
+    <h1>Seat environment monitor</h1>
+  </div>
+  <div class="dashboard-summary">
+    <span id="dashboard-online-count">{{ online_count }} live seats</span>
+    <span id="dashboard-updated-at">Auto refresh on</span>
+  </div>
+</section>
+
+<section id="dashboard-grid" class="telemetry-grid" aria-live="polite">
+  {% for seat in seats %}
+  <article class="telemetry-card{% if not seat.received_at %} is-offline{% endif %}">
+    <div class="telemetry-card-head">
+      <div>
+        <strong>{{ seat.code }}</strong>
+        <span>{{ seat.area }}</span>
+      </div>
+      <small>{% if seat.received_at %}Live{% else %}No data{% endif %}</small>
+    </div>
+    <div class="metric-row">
+      <div>
+        <span>Temperature</span>
+        <strong>{% if seat.temperature is not none %}{{ "%.1f"|format(seat.temperature) }}C{% else %}--{% endif %}</strong>
+      </div>
+      <div>
+        <span>Humidity</span>
+        <strong>{% if seat.humidity is not none %}{{ "%.1f"|format(seat.humidity) }}%{% else %}--{% endif %}</strong>
+      </div>
+    </div>
+    <div class="telemetry-details">
+      <span>
+        {% if seat.motion_detected is none %}
+          Unknown
+        {% elif seat.motion_detected %}
+          Occupied
+        {% else %}
+          Vacant
+        {% endif %}
+      </span>
+      <span>Noise {% if seat.noise_level is not none %}{{ "%.1f"|format(seat.noise_level) }}{% else %}--{% endif %}</span>
+    </div>
+    <footer>{% if seat.received_at %}Received {{ seat.received_at }}{% else %}Waiting for Raspberry Pi data{% endif %}</footer>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

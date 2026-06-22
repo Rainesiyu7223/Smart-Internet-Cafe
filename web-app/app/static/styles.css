@@ -423,6 +423,158 @@ button:hover {
   font-weight: 800;
 }
 
+.dashboard-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid rgba(216, 222, 234, 0.94);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(20, 33, 61, 0.96), rgba(28, 83, 132, 0.88)),
+    #14213d;
+  color: #ffffff;
+  padding: 32px;
+  box-shadow: 0 22px 60px rgba(23, 32, 51, 0.12);
+}
+
+.dashboard-hero .eyebrow {
+  color: #88e0c5;
+}
+
+.dashboard-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dashboard-summary span {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 9px 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 800;
+}
+
+.dashboard-summary span[data-state="error"] {
+  border-color: rgba(255, 178, 178, 0.5);
+  color: #ffd4d4;
+}
+
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.telemetry-card {
+  display: grid;
+  gap: 16px;
+  min-height: 250px;
+  border: 1px solid #d8deea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 20px;
+  box-shadow: 0 12px 26px rgba(23, 32, 51, 0.06);
+}
+
+.telemetry-card.is-offline {
+  background: #f9fafc;
+}
+
+.telemetry-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.telemetry-card-head strong,
+.telemetry-card-head span {
+  display: block;
+}
+
+.telemetry-card-head strong {
+  color: #14213d;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.telemetry-card-head span {
+  margin-top: 6px;
+  color: #697386;
+  font-weight: 800;
+}
+
+.telemetry-card-head small {
+  border-radius: 8px;
+  background: #ecf8f4;
+  color: #1f7a63;
+  padding: 6px 8px;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.telemetry-card.is-offline .telemetry-card-head small {
+  background: #edf0f5;
+  color: #697386;
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.metric-row div {
+  border: 1px solid #d8deea;
+  border-radius: 8px;
+  background: #f6f8fb;
+  padding: 14px;
+}
+
+.metric-row span {
+  display: block;
+  color: #697386;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.metric-row strong {
+  display: block;
+  margin-top: 8px;
+  color: #14213d;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.telemetry-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.telemetry-details span {
+  border: 1px solid #d8deea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 7px 9px;
+  color: #30394c;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.telemetry-card footer {
+  margin-top: auto;
+  border-top: 1px solid #e7ebf2;
+  padding-top: 12px;
+  color: #697386;
+  font-size: 0.86rem;
+}
+
 @media (max-width: 800px) {
   .shell {
     width: min(100% - 24px, 1120px);
@@ -436,7 +588,7 @@ button:hover {
 
   .nav {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .nav a {
@@ -464,5 +616,19 @@ button:hover {
   .section-heading {
     align-items: start;
     flex-direction: column;
+  }
+
+  .dashboard-hero {
+    align-items: start;
+    flex-direction: column;
+    padding: 24px;
+  }
+
+  .dashboard-summary {
+    justify-content: flex-start;
+  }
+
+  .metric-row {
+    grid-template-columns: 1fr;
   }
 }

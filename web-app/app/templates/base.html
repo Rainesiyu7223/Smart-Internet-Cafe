@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Smart Internet Cafe{% endblock %}</title>
+    {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
   </head>
   <body>
@@ -19,6 +20,7 @@
         <nav class="nav" aria-label="Main navigation">
           <a href="/">Reservation</a>
           <a href="/checkin">Check In</a>
+          <a href="/dashboard">Dashboard</a>
         </nav>
       </header>
       {% block content %}{% endblock %}

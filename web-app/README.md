@@ -1,6 +1,6 @@
 # Smart Internet Cafe Web App
 
-FastAPI + SQLite web app for online reservation, arrival check-in, and seat recommendation.
+FastAPI + SQLite web app for online reservation, arrival check-in, seat recommendation, and Raspberry Pi seat telemetry dashboard.
 
 ## Run
 
@@ -13,6 +13,45 @@ uvicorn app.main:app --reload
 ```
 
 Open <http://127.0.0.1:8000>.
+
+## Dashboard
+
+Open <http://127.0.0.1:8000/dashboard> to view the latest seat temperature and humidity.
+
+The app subscribes to MQTT topic `cybercafe/#` by default and stores incoming Raspberry Pi telemetry in SQLite. The existing Raspberry Pi script publishes payloads like:
+
+```json
+{
+  "client_id": "pi_node_seat_A1",
+  "timestamp": 1782140000,
+  "environment": {
+    "temperature": 24.6,
+    "humidity": 52.3,
+    "noise_level": 218
+  },
+  "seat_interact": {
+    "motion_detected": true,
+    "rotary_raw_value": 687
+  }
+}
+```
+
+Environment variables:
+
+```bash
+MQTT_BROKER=localhost
+MQTT_PORT=1883
+MQTT_TOPIC=cybercafe/#
+ENABLE_MQTT_SUBSCRIBER=1
+```
+
+You can also test without Raspberry Pi hardware:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/telemetry \
+  -H "Content-Type: application/json" \
+  -d '{"client_id":"pi_node_seat_A1","environment":{"temperature":24.6,"humidity":52.3,"noise_level":218},"seat_interact":{"motion_detected":true}}'
+```
 
 ## Flow
 
