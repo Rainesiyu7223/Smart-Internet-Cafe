@@ -72,7 +72,9 @@ if (dashboardGrid) {
       }
 
       onlineCount.textContent = `${data.online_count} live seats`;
-      updatedAt.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      updatedAt.textContent = data.data_source_error
+        ? "API fallback"
+        : `Computer A API · ${new Date().toLocaleTimeString()}`;
       dashboardGrid.innerHTML = data.seats.map(renderTelemetryCard).join("");
     } catch (error) {
       updatedAt.textContent = error.message;

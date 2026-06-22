@@ -11,9 +11,13 @@
   </div>
   <div class="dashboard-summary">
     <span id="dashboard-online-count">{{ online_count }} live seats</span>
-    <span id="dashboard-updated-at">Auto refresh on</span>
+    <span id="dashboard-updated-at">{% if data_source_error %}API fallback{% else %}Computer A API{% endif %}</span>
   </div>
 </section>
+
+{% if data_source_error %}
+<p class="dashboard-alert">{{ data_source_error }}</p>
+{% endif %}
 
 <section id="dashboard-grid" class="telemetry-grid" aria-live="polite">
   {% for seat in seats %}

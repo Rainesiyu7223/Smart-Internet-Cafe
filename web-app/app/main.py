@@ -18,6 +18,7 @@ from .database import (
     list_latest_telemetry,
     list_available_seats,
 )
+from .remote_telemetry import fetch_remote_telemetry, get_remote_telemetry_url, merge_remote_with_seats
 from .telemetry import save_telemetry_payload, start_mqtt_subscriber, stop_mqtt_subscriber
 
 
@@ -71,14 +72,12 @@ def checkin_page(request: Request) -> HTMLResponse:
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard_page(request: Request) -> HTMLResponse:
-    rows = [dict(row) for row in list_latest_telemetry()]
-    online_count = sum(1 for row in rows if row["received_at"] is not None)
+    dashboard = load_dashboard_data()
     return templates.TemplateResponse(
         "dashboard.html",
         {
             "request": request,
-            "seats": rows,
-            "online_count": online_count,
+            **dashboard,
         },
     )
 
@@ -130,13 +129,7 @@ def checkin(payload: CheckInRequest) -> dict[str, object]:
 
 @app.get("/api/dashboard")
 def dashboard_data() -> dict[str, object]:
-    rows = [dict(row) for row in list_latest_telemetry()]
-    online_count = sum(1 for row in rows if row["received_at"] is not None)
-    return {
-        "message": "Dashboard data loaded",
-        "online_count": online_count,
-        "seats": rows,
-    }
+    return {"message": "Dashboard data loaded", **load_dashboard_data()}
 
 
 @app.post("/api/telemetry")
@@ -145,4 +138,17 @@ def ingest_telemetry(payload: TelemetryPayload) -> dict[str, object]:
     return {
         "message": "Telemetry stored",
         "telemetry": row,
+    }
+
+
+def load_dashboard_data() -> dict[str, object]:
+    seat_rows = [dict(row) for row in list_latest_telemetry()]
+    remote_rows, error = fetch_remote_telemetry()
+    rows = merge_remote_with_seats(seat_rows, remote_rows)
+    online_count = sum(1 for row in rows if row["received_at"] is not None)
+    return {
+        "online_count": online_count,
+        "seats": rows,
+        "data_source": get_remote_telemetry_url(),
+        "data_source_error": error,
     }

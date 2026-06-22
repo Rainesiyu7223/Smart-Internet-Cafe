@@ -18,7 +18,31 @@ Open <http://127.0.0.1:8000>.
 
 Open <http://127.0.0.1:8000/dashboard> to view the latest seat temperature and humidity.
 
-The app subscribes to MQTT topic `cybercafe/#` by default and stores incoming Raspberry Pi telemetry in SQLite. The existing Raspberry Pi script publishes payloads like:
+By default, the dashboard reads live data from Computer A:
+
+```bash
+TELEMETRY_API_URL=http://192.168.0.114:5001/api/seat_data
+```
+
+Computer A should return JSON with a `data` list, for example:
+
+```json
+{
+  "status": "ok",
+  "data": [
+    {
+      "seat_code": "A01",
+      "temperature": 24.6,
+      "humidity": 52.3,
+      "noise_level": 218,
+      "motion_detected": true,
+      "received_at": "2026-06-22T13:30:00Z"
+    }
+  ]
+}
+```
+
+The app can also subscribe to MQTT topic `cybercafe/#` and stores incoming Raspberry Pi telemetry in SQLite. The existing Raspberry Pi script publishes payloads like:
 
 ```json
 {

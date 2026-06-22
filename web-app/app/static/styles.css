@@ -463,6 +463,16 @@ button:hover {
   color: #ffd4d4;
 }
 
+.dashboard-alert {
+  border: 1px solid #f0c5c5;
+  border-radius: 8px;
+  background: #fff4f4;
+  color: #9a2c2c;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  font-weight: 800;
+}
+
 .telemetry-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

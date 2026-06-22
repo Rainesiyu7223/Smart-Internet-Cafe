@@ -50,7 +50,7 @@ def save_telemetry_payload(payload: dict[str, Any], topic: str | None = None) ->
 
 
 def start_mqtt_subscriber() -> Any | None:
-    if os.getenv("ENABLE_MQTT_SUBSCRIBER", "1") == "0":
+    if os.getenv("ENABLE_MQTT_SUBSCRIBER", "0") == "0":
         return None
 
     try:
