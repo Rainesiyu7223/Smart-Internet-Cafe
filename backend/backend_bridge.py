@@ -11,12 +11,10 @@ MQTT_PORT = 1883
 MQTT_TOPIC = "cybercafe/seat_A1"
 
 INFLUX_URL = "http://localhost:8086" 
-#INFLUX_TOKEN = "my-super-secret-auth-token" 
 INFLUX_TOKEN = "apiv3_kHXnnT92Gd5kGVoZSEUJ16UdgAPY80G6gnXTVneCtp8xaX2qpcAdQi6UBcPz-0HKi5swWffTjVIWXXlqPsyHuA" 
-#new:token = "my-super-secret-token"
 INFLUX_ORG = "cybercafe_org"
 INFLUX_BUCKET = "cybercafe_data"
-# =========================================================
+# =========================================================================
 
 # Initialize client
 db_client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
@@ -35,17 +33,21 @@ def on_message(client, userdata, msg):
         data = json.loads(payload_str)
         print(f"[📥 MQTT Received] Data fetched from {data['client_id']}")
         
-        # Construct time-series data points
+        # 🔄 同步更新后的时序数据点（Point）构建
         point = Point("cybercafe_telemetry") \
             .tag("client_id", data["client_id"]) \
             .field("temperature", float(data["environment"]["temperature"])) \
             .field("humidity", float(data["environment"]["humidity"])) \
             .field("noise_level", int(data["environment"]["noise_level"])) \
-            .field("motion_detected", int(1 if data["seat_interact"]["motion_detected"] else 0)) \
+            .field("light_level", int(data["environment"]["light_level"])) \
+            .field("button_pressed", int(1 if data["seat_interact"]["button_pressed"] else 0)) \
+            .field("led_status", str(data["local_actuators"]["led_status"])) \
+            .field("lcd_alert", str(data["local_actuators"]["lcd_alert"])) \
             .time(data["timestamp"])
         
+        # 🚀 写入新版全维度数据到 InfluxDB
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
-        print(f"[💾 DB Saved] Data committed successfully!")
+        print(f"[💾 DB Saved] Data committed successfully! (Light: {data['environment']['light_level']}, Button: {data['seat_interact']['button_pressed']})")
         
     except Exception as e:
         print(f"[Error] Save failed: {e}")
