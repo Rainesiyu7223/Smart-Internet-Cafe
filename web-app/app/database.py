@@ -4,7 +4,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -53,6 +53,37 @@ def init_db() -> None:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS seat_telemetry (
+                seat_code TEXT PRIMARY KEY,
+                client_id TEXT,
+                temperature REAL,
+                humidity REAL,
+                noise_level REAL,
+                button_pressed INTEGER,
+                rotary_raw_value REAL,
+                received_at TEXT NOT NULL,
+                source_timestamp INTEGER
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS telemetry_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seat_code TEXT NOT NULL,
+                client_id TEXT,
+                temperature REAL,
+                humidity REAL,
+                noise_level REAL,
+                button_pressed INTEGER,
+                rotary_raw_value REAL,
+                received_at TEXT NOT NULL,
+                source_timestamp INTEGER
+            )
+            """
+        )
         existing_seats = connection.execute("SELECT COUNT(*) FROM seats").fetchone()[0]
         if existing_seats == 0:
             connection.executemany(
@@ -69,6 +100,106 @@ def init_db() -> None:
                     ("D08", "Budget Zone", "GTX 1660", "low", 0, "available"),
                 ],
             )
+        ensure_column(connection, "seat_telemetry", "button_pressed", "INTEGER")
+        ensure_column(connection, "telemetry_history", "button_pressed", "INTEGER")
+
+
+def ensure_column(
+    connection: sqlite3.Connection,
+    table_name: str,
+    column_name: str,
+    column_type: str,
+) -> None:
+    columns = {
+        row["name"]
+        for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+    }
+    if column_name not in columns:
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+
+
+def upsert_seat_telemetry(
+    *,
+    seat_code: str,
+    client_id: str | None,
+    temperature: float | None,
+    humidity: float | None,
+    noise_level: float | None,
+    button_pressed: bool | None,
+    rotary_raw_value: float | None,
+    source_timestamp: int | None,
+) -> sqlite3.Row:
+    received_at = datetime.utcnow().isoformat(timespec="seconds")
+    button_value = None if button_pressed is None else int(button_pressed)
+    values: tuple[Any, ...] = (
+        seat_code,
+        client_id,
+        temperature,
+        humidity,
+        noise_level,
+        button_value,
+        rotary_raw_value,
+        received_at,
+        source_timestamp,
+    )
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO seat_telemetry (
+                seat_code, client_id, temperature, humidity, noise_level,
+                button_pressed, rotary_raw_value, received_at, source_timestamp
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(seat_code) DO UPDATE SET
+                client_id = excluded.client_id,
+                temperature = excluded.temperature,
+                humidity = excluded.humidity,
+                noise_level = excluded.noise_level,
+                button_pressed = excluded.button_pressed,
+                rotary_raw_value = excluded.rotary_raw_value,
+                received_at = excluded.received_at,
+                source_timestamp = excluded.source_timestamp
+            """,
+            values,
+        )
+        connection.execute(
+            """
+            INSERT INTO telemetry_history (
+                seat_code, client_id, temperature, humidity, noise_level,
+                button_pressed, rotary_raw_value, received_at, source_timestamp
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            values,
+        )
+        return connection.execute(
+            "SELECT * FROM seat_telemetry WHERE seat_code = ?",
+            (seat_code,),
+        ).fetchone()
+
+
+def list_latest_telemetry() -> list[sqlite3.Row]:
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT
+                s.code,
+                s.area,
+                s.pc_level,
+                s.status,
+                t.client_id,
+                t.temperature,
+                t.humidity,
+                t.noise_level,
+                t.button_pressed,
+                t.rotary_raw_value,
+                t.received_at,
+                t.source_timestamp
+            FROM seats s
+            LEFT JOIN seat_telemetry t ON t.seat_code = s.code
+            ORDER BY s.code ASC
+            """
+        ).fetchall()
 
 
 def create_reservation(name: str, phone: str | None = None) -> sqlite3.Row:
