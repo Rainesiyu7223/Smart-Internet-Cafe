@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ seat.code }} | Smart Internet Cafe{% endblock %}
+
+{% block content %}
+<section class="seat-detail-shell" data-seat-code="{{ seat.code }}">
+  <div class="seat-detail-hero">
+    <div>
+      <p class="eyebrow">Current Seat</p>
+      <h1>{{ seat.code }}</h1>
+    </div>
+    <a class="secondary-link" href="/checkin">Back</a>
+  </div>
+
+  {% if data_source_error %}
+  <p id="seat-detail-alert" class="dashboard-alert">{{ data_source_error }}</p>
+  {% else %}
+  <p id="seat-detail-alert" class="dashboard-alert" hidden></p>
+  {% endif %}
+
+  <article class="current-seat-card">
+    <div class="current-seat-state">
+      <span>Occupancy</span>
+      <strong id="seat-detail-occupied">
+        {% if seat.occupied is none %}
+          Unknown
+        {% elif seat.occupied %}
+          Occupied
+        {% else %}
+          Vacant
+        {% endif %}
+      </strong>
+    </div>
+
+    <div class="metric-row">
+      <div>
+        <span>Temperature</span>
+        <strong id="seat-detail-temperature">{% if seat.temperature is not none %}{{ "%.1f"|format(seat.temperature) }}C{% else %}--{% endif %}</strong>
+      </div>
+      <div>
+        <span>Humidity</span>
+        <strong id="seat-detail-humidity">{% if seat.humidity is not none %}{{ "%.1f"|format(seat.humidity) }}%{% else %}--{% endif %}</strong>
+      </div>
+    </div>
+
+    <div class="seat-detail-noise">
+      <span>Noise</span>
+      <strong id="seat-detail-noise">{% if seat.noise_level is not none %}{{ "%.1f"|format(seat.noise_level) }}{% else %}--{% endif %}</strong>
+    </div>
+  </article>
+</section>
+{% endblock %}

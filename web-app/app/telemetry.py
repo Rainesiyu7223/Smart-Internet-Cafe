@@ -36,17 +36,24 @@ def seat_code_from_payload(payload: dict[str, Any], topic: str | None = None) ->
 def save_telemetry_payload(payload: dict[str, Any], topic: str | None = None) -> dict[str, Any]:
     environment = payload.get("environment") or {}
     seat_interact = payload.get("seat_interact") or {}
+    button_pressed = _optional_bool(
+        payload.get("button_pressed", seat_interact.get("button_pressed"))
+    )
     row = upsert_seat_telemetry(
         seat_code=seat_code_from_payload(payload, topic),
         client_id=payload.get("client_id"),
         temperature=_optional_float(environment.get("temperature")),
         humidity=_optional_float(environment.get("humidity")),
         noise_level=_optional_float(environment.get("noise_level")),
-        motion_detected=_optional_bool(seat_interact.get("motion_detected")),
+        button_pressed=button_pressed,
         rotary_raw_value=_optional_float(seat_interact.get("rotary_raw_value")),
         source_timestamp=_optional_int(payload.get("timestamp")),
     )
-    return dict(row)
+    data = dict(row)
+    data.pop("motion_detected", None)
+    data["button_pressed"] = button_pressed
+    data["occupied"] = button_pressed
+    return data
 
 
 def start_mqtt_subscriber() -> Any | None:
@@ -129,5 +136,5 @@ def _optional_bool(value: Any) -> bool | None:
     if isinstance(value, (int, float)):
         return bool(value)
     if isinstance(value, str):
-        return value.strip().lower() in {"1", "true", "yes", "on"}
+        return value.strip().lower() in {"1", "true", "yes", "on", "pressed", "down", "occupied"}
     return None

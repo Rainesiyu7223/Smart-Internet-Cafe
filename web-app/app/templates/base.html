@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Smart Internet Cafe{% endblock %}</title>
     {% block extra_head %}{% endblock %}
-    <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}?v=admin-header-1">
   </head>
   <body>
     <main class="shell">
@@ -14,17 +14,23 @@
           <span class="brand-mark">S</span>
           <span>
             <strong>Smart Internet Cafe</strong>
-            <small>Reservation desk</small>
           </span>
         </a>
         <nav class="nav" aria-label="Main navigation">
+          {% if role == "user" %}
           <a href="/">Reservation</a>
           <a href="/checkin">Check In</a>
-          <a href="/dashboard">Dashboard</a>
+          <a href="/logout">Logout</a>
+          {% elif role == "admin" %}
+          <a href="/admin">Admin</a>
+          <a href="/logout">Logout</a>
+          {% else %}
+          <a href="/login">Login</a>
+          {% endif %}
         </nav>
       </header>
       {% block content %}{% endblock %}
     </main>
-    <script src="{{ url_for('static', path='/app.js') }}"></script>
+    <script src="{{ url_for('static', path='/app.js') }}?v=admin-header-1"></script>
   </body>
 </html>

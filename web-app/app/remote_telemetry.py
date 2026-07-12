@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import urllib.error
 import urllib.request
@@ -10,7 +11,7 @@ from typing import Any
 from .telemetry import normalize_seat_code
 
 
-DEFAULT_TELEMETRY_API_URL = "http://192.168.0.114:5001/api/seat_data"
+DEFAULT_TELEMETRY_API_URL = "http://172.20.10.2:5001/api/seat_data"
 
 
 def get_remote_telemetry_url() -> str:
@@ -19,7 +20,7 @@ def get_remote_telemetry_url() -> str:
 
 def fetch_remote_telemetry() -> tuple[list[dict[str, Any]], str | None]:
     url = get_remote_telemetry_url()
-    timeout = float(os.getenv("TELEMETRY_API_TIMEOUT", "5"))
+    timeout = float(os.getenv("TELEMETRY_API_TIMEOUT", "3"))
     request = urllib.request.Request(url, headers={"Accept": "application/json"})
 
     try:
@@ -38,22 +39,22 @@ def merge_remote_with_seats(
 ) -> list[dict[str, Any]]:
     telemetry_by_code = {
         row["code"]: row
-        for row in telemetry_rows
+        for row in reversed(telemetry_rows)
         if row.get("code")
     }
     merged_rows = []
     for seat in seat_rows:
         code = seat["code"]
         merged = {
-            **seat,
             "client_id": None,
             "temperature": None,
             "humidity": None,
             "noise_level": None,
-            "motion_detected": None,
+            "occupied": None,
             "rotary_raw_value": None,
             "received_at": None,
             "source_timestamp": None,
+            **seat,
         }
         if code in telemetry_by_code:
             merged.update(telemetry_by_code[code])
@@ -100,6 +101,17 @@ def _extract_records(payload: Any) -> list[dict[str, Any]]:
 def _normalize_remote_record(record: dict[str, Any]) -> dict[str, Any]:
     environment = _dict_value(record, "environment")
     seat_interact = _dict_value(record, "seat_interact")
+    button_pressed = _optional_bool(
+        _first_value(
+            record,
+            "button_pressed",
+            "button_state",
+            "button",
+            "seat_button",
+            "is_pressed",
+            default=seat_interact.get("button_pressed"),
+        )
+    )
     code = _first_value(
         record,
         "seat_code",
@@ -132,15 +144,8 @@ def _normalize_remote_record(record: dict[str, Any]) -> dict[str, Any]:
         "noise_level": _optional_float(
             _first_value(record, "noise_level", "noise", default=environment.get("noise_level"))
         ),
-        "motion_detected": _optional_bool(
-            _first_value(
-                record,
-                "motion_detected",
-                "occupied",
-                "is_occupied",
-                default=seat_interact.get("motion_detected"),
-            )
-        ),
+        "button_pressed": button_pressed,
+        "occupied": False,
         "rotary_raw_value": _optional_float(
             _first_value(record, "rotary_raw_value", default=seat_interact.get("rotary_raw_value"))
         ),
@@ -156,9 +161,19 @@ def _dict_value(record: dict[str, Any], key: str) -> dict[str, Any]:
 
 def _first_value(record: dict[str, Any], *keys: str, default: Any = None) -> Any:
     for key in keys:
-        if key in record and record[key] not in (None, ""):
+        if key in record and _has_value(record[key]):
             return record[key]
     return default
+
+
+def _has_value(value: Any) -> bool:
+    if value in (None, ""):
+        return False
+    return not _is_nan(value)
+
+
+def _is_nan(value: Any) -> bool:
+    return isinstance(value, float) and math.isnan(value)
 
 
 def _format_received_at(value: Any) -> str | None:
@@ -172,25 +187,27 @@ def _format_received_at(value: Any) -> str | None:
 
 
 def _optional_float(value: Any) -> float | None:
-    if value is None:
+    if value is None or _is_nan(value):
         return None
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError):
         return None
+    return None if math.isnan(parsed) else parsed
 
 
 def _optional_int(value: Any) -> int | None:
-    if value is None:
+    if value is None or _is_nan(value):
         return None
     try:
-        return int(float(value))
+        parsed = float(value)
     except (TypeError, ValueError):
         return None
+    return None if math.isnan(parsed) else int(parsed)
 
 
 def _optional_bool(value: Any) -> bool | None:
-    if value is None:
+    if value is None or _is_nan(value):
         return None
     if isinstance(value, bool):
         return value
@@ -198,8 +215,8 @@ def _optional_bool(value: Any) -> bool | None:
         return bool(value)
     if isinstance(value, str):
         normalized = value.strip().lower()
-        if normalized in {"1", "true", "yes", "on", "occupied"}:
+        if normalized in {"1", "true", "yes", "on", "pressed", "down", "occupied"}:
             return True
-        if normalized in {"0", "false", "no", "off", "vacant"}:
+        if normalized in {"0", "false", "no", "off", "released", "up", "vacant"}:
             return False
     return None

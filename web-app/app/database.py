@@ -61,7 +61,7 @@ def init_db() -> None:
                 temperature REAL,
                 humidity REAL,
                 noise_level REAL,
-                motion_detected INTEGER,
+                button_pressed INTEGER,
                 rotary_raw_value REAL,
                 received_at TEXT NOT NULL,
                 source_timestamp INTEGER
@@ -77,7 +77,7 @@ def init_db() -> None:
                 temperature REAL,
                 humidity REAL,
                 noise_level REAL,
-                motion_detected INTEGER,
+                button_pressed INTEGER,
                 rotary_raw_value REAL,
                 received_at TEXT NOT NULL,
                 source_timestamp INTEGER
@@ -100,6 +100,22 @@ def init_db() -> None:
                     ("D08", "Budget Zone", "GTX 1660", "low", 0, "available"),
                 ],
             )
+        ensure_column(connection, "seat_telemetry", "button_pressed", "INTEGER")
+        ensure_column(connection, "telemetry_history", "button_pressed", "INTEGER")
+
+
+def ensure_column(
+    connection: sqlite3.Connection,
+    table_name: str,
+    column_name: str,
+    column_type: str,
+) -> None:
+    columns = {
+        row["name"]
+        for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+    }
+    if column_name not in columns:
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
 
 
 def upsert_seat_telemetry(
@@ -109,19 +125,19 @@ def upsert_seat_telemetry(
     temperature: float | None,
     humidity: float | None,
     noise_level: float | None,
-    motion_detected: bool | None,
+    button_pressed: bool | None,
     rotary_raw_value: float | None,
     source_timestamp: int | None,
 ) -> sqlite3.Row:
     received_at = datetime.utcnow().isoformat(timespec="seconds")
-    motion_value = None if motion_detected is None else int(motion_detected)
+    button_value = None if button_pressed is None else int(button_pressed)
     values: tuple[Any, ...] = (
         seat_code,
         client_id,
         temperature,
         humidity,
         noise_level,
-        motion_value,
+        button_value,
         rotary_raw_value,
         received_at,
         source_timestamp,
@@ -131,7 +147,7 @@ def upsert_seat_telemetry(
             """
             INSERT INTO seat_telemetry (
                 seat_code, client_id, temperature, humidity, noise_level,
-                motion_detected, rotary_raw_value, received_at, source_timestamp
+                button_pressed, rotary_raw_value, received_at, source_timestamp
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(seat_code) DO UPDATE SET
@@ -139,7 +155,7 @@ def upsert_seat_telemetry(
                 temperature = excluded.temperature,
                 humidity = excluded.humidity,
                 noise_level = excluded.noise_level,
-                motion_detected = excluded.motion_detected,
+                button_pressed = excluded.button_pressed,
                 rotary_raw_value = excluded.rotary_raw_value,
                 received_at = excluded.received_at,
                 source_timestamp = excluded.source_timestamp
@@ -150,7 +166,7 @@ def upsert_seat_telemetry(
             """
             INSERT INTO telemetry_history (
                 seat_code, client_id, temperature, humidity, noise_level,
-                motion_detected, rotary_raw_value, received_at, source_timestamp
+                button_pressed, rotary_raw_value, received_at, source_timestamp
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -175,7 +191,7 @@ def list_latest_telemetry() -> list[sqlite3.Row]:
                 t.temperature,
                 t.humidity,
                 t.noise_level,
-                t.motion_detected,
+                t.button_pressed,
                 t.rotary_raw_value,
                 t.received_at,
                 t.source_timestamp

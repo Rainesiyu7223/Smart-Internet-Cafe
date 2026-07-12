@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Login | Smart Internet Cafe{% endblock %}
+
+{% block content %}
+<section class="login-panel">
+  <div class="login-copy">
+    <p class="eyebrow">Login</p>
+    <h1>Choose your access mode.</h1>
+  </div>
+
+  <div class="login-options" aria-label="Login options">
+    <a class="login-option" href="/login/user">
+      <span>User</span>
+      <strong>Reservation and check-in</strong>
+    </a>
+    <a class="login-option" href="/login/admin">
+      <span>Admin</span>
+      <strong>Operations dashboard</strong>
+    </a>
+  </div>
+</section>
+{% endblock %}

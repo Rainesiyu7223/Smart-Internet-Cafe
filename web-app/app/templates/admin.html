@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Admin | Smart Internet Cafe{% endblock %}
+
+{% block content %}
+<section class="admin-shell">
+  <div class="admin-header">
+    <div>
+      <p class="eyebrow">Admin Console</p>
+      <h1>Seat operations</h1>
+    </div>
+    <div class="dashboard-summary">
+      <span id="dashboard-online-count">{{ online_count }} live seats</span>
+    </div>
+  </div>
+
+  {% if data_source_error %}
+  <p class="dashboard-alert">{{ data_source_error }}</p>
+  {% endif %}
+
+  <div class="admin-section-heading">
+    <div>
+      <p class="eyebrow">Live Monitor</p>
+      <h2>A01-A05 seat environment monitor</h2>
+    </div>
+  </div>
+
+  {% include "_telemetry_cards.html" %}
+</section>
+
+<div id="admin-call-modal" class="admin-call-modal" hidden>
+  <div class="admin-call-dialog" role="alertdialog" aria-modal="true" aria-labelledby="admin-call-title">
+    <span class="admin-call-badge">Seat Call</span>
+    <h2 id="admin-call-title">A01 is calling for assistance</h2>
+    <p>Please go to seat A01 and handle the user's request.</p>
+    <button id="admin-call-dismiss" type="button">Resolved</button>
+  </div>
+</div>
+{% endblock %}

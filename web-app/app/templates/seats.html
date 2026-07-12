@@ -3,67 +3,69 @@
 {% block title %}Seat Recommendation | Smart Internet Cafe{% endblock %}
 
 {% block content %}
-<section class="hero-panel seats-panel">
-  <div class="hero-copy">
-    <p class="eyebrow">Seat Recommendation</p>
-    <h1>Welcome, {{ reservation["name"] }}.</h1>
-    <div class="guest-meta">
-      <span>Reservation #{{ reservation["id"] }}</span>
-      <span>Checked in</span>
+<section class="recommendation-shell">
+  <div class="recommendation-hero">
+    <div>
+      <p class="eyebrow">Seat Recommendation</p>
+      <h1>Welcome, {{ reservation["name"] }}.</h1>
+      <div class="guest-meta">
+        <span>Reservation #{{ reservation["id"] }}</span>
+        <span>Checked in</span>
+      </div>
+    </div>
+    <div class="recommendation-status">
+      <strong>Recommendation model</strong>
+      <span>Framework ready</span>
     </div>
   </div>
 
-  {% if recommended %}
-  <article class="recommendation">
-    <span class="badge">Recommended</span>
-    <strong>{{ recommended["code"] }}</strong>
-    <p>{{ recommended["area"] }}</p>
-    <dl>
-      <div>
-        <dt>PC</dt>
-        <dd>{{ recommended["pc_level"] }}</dd>
-      </div>
-      <div>
-        <dt>Noise</dt>
-        <dd>{{ recommended["noise_level"] }}</dd>
-      </div>
-      <div>
-        <dt>Window</dt>
-        <dd>{% if recommended["has_window"] %}Yes{% else %}No{% endif %}</dd>
-      </div>
-    </dl>
-  </article>
-  {% else %}
-  <article class="recommendation">
-    <span class="badge">No seats available</span>
-    <strong>Please ask staff</strong>
-    <p>All seats are currently occupied or unavailable.</p>
-  </article>
-  {% endif %}
-</section>
-
-<div class="section-heading">
-  <div>
-    <p class="eyebrow">Available Stations</p>
-    <h2>Choose a seat</h2>
-  </div>
-  <span>{{ seats | length }} open</span>
-</div>
-
-<section class="seat-grid">
-  {% for seat in seats %}
-  <article class="seat-card">
-    <div class="seat-code">
-      <strong>{{ seat["code"] }}</strong>
-      <span>Open</span>
+  <section class="recommendation-workbench">
+    <div class="recommendation-copy">
+      <p class="eyebrow">System Pick</p>
+      <h2>Recommended seat preview</h2>
+      <p class="recommendation-muted">
+        The recommendation area is ready for the next backend algorithm. It will combine live seat data such as temperature, humidity, noise, and occupancy.
+      </p>
     </div>
-    <p>{{ seat["area"] }}</p>
-    <small>{{ seat["pc_level"] }}</small>
-    <div class="seat-tags">
-      <span>{{ seat["noise_level"] }} noise</span>
-      {% if seat["has_window"] %}<span>window</span>{% endif %}
+    {% if recommended %}
+    <article class="recommendation-card">
+      <span>Current placeholder</span>
+      <strong>{{ recommended["code"] }}</strong>
+      <p>Algorithm result will appear here.</p>
+    </article>
+    {% else %}
+    <article class="recommendation-card">
+      <span>No seats</span>
+      <strong>Unavailable</strong>
+      <p>Please ask staff for help.</p>
+    </article>
+    {% endif %}
+  </section>
+
+  <section class="manual-seat-panel">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Manual Selection</p>
+        <h2>Choose your seat</h2>
+      </div>
+      <span>{{ seats | length }} seats</span>
     </div>
-  </article>
-  {% endfor %}
+
+    <div class="seat-grid selectable-seat-grid">
+      {% for seat in seats %}
+      <button class="seat-card selectable-seat" type="button" data-seat-code="{{ seat.code }}">
+        <div class="seat-code">
+          <strong>{{ seat.code }}</strong>
+          <span>Choose</span>
+        </div>
+        <div class="seat-specs">
+          <span>{{ seat.status | title }}</span>
+        </div>
+      </button>
+      {% endfor %}
+    </div>
+
+    <p id="seat-selection-result" class="form-result" aria-live="polite"></p>
+  </section>
 </section>
 {% endblock %}
