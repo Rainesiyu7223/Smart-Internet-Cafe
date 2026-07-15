@@ -9,10 +9,12 @@ cd /Users/Rain/Desktop/Project/Smart-Internet-Cafe/web-app
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python run.py
 ```
 
-Open <http://127.0.0.1:8000>.
+The app listens on all local network interfaces at port 8001. Open
+<http://127.0.0.1:8001> on this computer, or use
+`http://<your-computer-LAN-IP>:8001` from a phone on the same Wi-Fi network.
 
 ## Dashboard
 
