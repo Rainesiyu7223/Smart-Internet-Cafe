@@ -21,7 +21,7 @@ Open <http://127.0.0.1:8000/dashboard> to view the latest A01 seat temperature a
 By default, the dashboard reads live data from Computer A:
 
 ```bash
-TELEMETRY_API_URL=http://172.20.10.2:5001/api/seat_data
+TELEMETRY_API_URL=http://192.168.0.114:5001/api/seat_data
 ```
 
 Computer A should return JSON with a `data` list, for example:

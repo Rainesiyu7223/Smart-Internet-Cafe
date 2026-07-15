@@ -489,6 +489,8 @@ button:hover {
 }
 
 .selectable-seat {
+  position: relative;
+  overflow: visible;
   width: 100%;
   color: inherit;
   text-align: left;
@@ -496,11 +498,118 @@ button:hover {
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
+.seat-hover-info {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  display: grid;
+  width: max-content;
+  max-width: 240px;
+  gap: 5px;
+  border: 1px solid #bfd8d0;
+  border-radius: 8px;
+  background: #14213d;
+  padding: 12px;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 6px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.seat-hover-info strong {
+  color: #88e0c5;
+  font-size: 0.82rem;
+}
+
+.selectable-seat:hover .seat-hover-info,
+.selectable-seat:focus-visible .seat-hover-info {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .selectable-seat:hover,
 .selectable-seat.is-selected {
   border-color: #1f7a63;
   box-shadow: 0 16px 34px rgba(23, 32, 51, 0.12);
   transform: translateY(-2px);
+}
+
+.selectable-seat:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.selectable-seat:disabled:hover {
+  border-color: #d8deea;
+  box-shadow: 0 12px 26px rgba(23, 32, 51, 0.06);
+  transform: none;
+}
+
+.seat-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 33, 61, 0.48);
+  padding: 24px;
+}
+
+.seat-confirm-modal[hidden] {
+  display: none;
+}
+
+.seat-confirm-dialog {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 430px);
+  border: 1px solid #bfd8d0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 26px;
+  box-shadow: 0 28px 80px rgba(23, 32, 51, 0.32);
+}
+
+.seat-confirm-badge {
+  width: fit-content;
+  border-radius: 8px;
+  background: #ecf8f4;
+  padding: 7px 10px;
+  color: #1f7a63;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.seat-confirm-dialog h2,
+.seat-confirm-dialog p {
+  margin: 0;
+}
+
+.seat-confirm-dialog p {
+  color: #697386;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.seat-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.seat-confirm-cancel {
+  background: #edf0f5;
+  color: #30394c;
+}
+
+.seat-confirm-cancel:hover {
+  background: #dfe5ee;
 }
 
 .seat-code {
@@ -567,6 +676,21 @@ button:hover {
   color: #ffffff;
   padding: 10px 13px;
   font-weight: 900;
+}
+
+.seat-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.checkout-button {
+  background: #ffffff;
+  color: #14213d;
+}
+
+.checkout-button:hover {
+  background: #edf0f5;
 }
 
 .current-seat-card {
@@ -684,6 +808,18 @@ button:hover {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   margin-top: 18px;
+}
+
+.telemetry-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  border: 1px dashed #b9c5d8;
+  border-radius: 8px;
+  background: #f9fafc;
+  padding: 22px;
+  color: #697386;
+  font-weight: 800;
+  text-align: center;
 }
 
 .telemetry-card {
@@ -845,6 +981,20 @@ button:hover {
   font-weight: 800;
 }
 
+.release-seat {
+  width: fit-content;
+  min-height: 34px;
+  background: #fff4f4;
+  border: 1px solid #f0c5c5;
+  color: #9a2c2c;
+  padding: 7px 10px;
+  font-size: 0.78rem;
+}
+
+.release-seat:hover {
+  background: #ffe9e9;
+}
+
 .telemetry-card footer {
   margin-top: auto;
   border-top: 1px solid #e7ebf2;
@@ -856,7 +1006,7 @@ button:hover {
 
 @media (min-width: 1180px) {
   .telemetry-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

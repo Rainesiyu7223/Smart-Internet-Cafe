@@ -36,7 +36,8 @@ def init_db() -> None:
                 normalized_name TEXT NOT NULL,
                 phone TEXT,
                 reserved_at TEXT NOT NULL,
-                checked_in_at TEXT
+                checked_in_at TEXT,
+                checked_out_at TEXT
             )
             """
         )
@@ -84,6 +85,17 @@ def init_db() -> None:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS seat_assignments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reservation_id INTEGER NOT NULL UNIQUE,
+                seat_code TEXT NOT NULL,
+                selected_at TEXT NOT NULL,
+                FOREIGN KEY (reservation_id) REFERENCES reservations(id)
+            )
+            """
+        )
         existing_seats = connection.execute("SELECT COUNT(*) FROM seats").fetchone()[0]
         if existing_seats == 0:
             connection.executemany(
@@ -102,6 +114,7 @@ def init_db() -> None:
             )
         ensure_column(connection, "seat_telemetry", "button_pressed", "INTEGER")
         ensure_column(connection, "telemetry_history", "button_pressed", "INTEGER")
+        ensure_column(connection, "reservations", "checked_out_at", "TEXT")
 
 
 def ensure_column(
@@ -239,7 +252,49 @@ def check_in_reservation(reservation_id: int) -> sqlite3.Row:
     now = datetime.utcnow().isoformat(timespec="seconds")
     with get_connection() as connection:
         connection.execute(
-            "UPDATE reservations SET checked_in_at = ? WHERE id = ?",
+            "UPDATE reservations SET checked_in_at = ?, checked_out_at = NULL WHERE id = ?",
+            (now, reservation_id),
+        )
+        return connection.execute(
+            "SELECT * FROM reservations WHERE id = ?",
+            (reservation_id,),
+        ).fetchone()
+
+
+def check_out_reservation(reservation_id: int) -> sqlite3.Row:
+    now = datetime.utcnow().isoformat(timespec="seconds")
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE reservations SET checked_out_at = ? WHERE id = ?",
+            (now, reservation_id),
+        )
+        return connection.execute(
+            "SELECT * FROM reservations WHERE id = ?",
+            (reservation_id,),
+        ).fetchone()
+
+
+def release_active_seat(seat_code: str) -> sqlite3.Row | None:
+    now = datetime.utcnow().isoformat(timespec="seconds")
+    with get_connection() as connection:
+        assignment = connection.execute(
+            """
+            SELECT a.reservation_id
+            FROM seat_assignments a
+            INNER JOIN reservations r ON r.id = a.reservation_id
+            WHERE a.seat_code = ?
+              AND r.checked_in_at IS NOT NULL
+              AND r.checked_out_at IS NULL
+            ORDER BY a.selected_at DESC
+            LIMIT 1
+            """,
+            (seat_code,),
+        ).fetchone()
+        if assignment is None:
+            return None
+        reservation_id = assignment["reservation_id"]
+        connection.execute(
+            "UPDATE reservations SET checked_out_at = ? WHERE id = ?",
             (now, reservation_id),
         )
         return connection.execute(
@@ -254,6 +309,62 @@ def get_reservation(reservation_id: int) -> sqlite3.Row | None:
             "SELECT * FROM reservations WHERE id = ?",
             (reservation_id,),
         ).fetchone()
+
+
+def assign_seat_to_reservation(reservation_id: int, seat_code: str) -> sqlite3.Row:
+    selected_at = datetime.utcnow().isoformat(timespec="seconds")
+    with get_connection() as connection:
+        assigned_to_other_guest = connection.execute(
+            """
+            SELECT 1
+            FROM seat_assignments a
+            INNER JOIN reservations r ON r.id = a.reservation_id
+            WHERE a.seat_code = ?
+              AND a.reservation_id != ?
+              AND r.checked_in_at IS NOT NULL
+              AND r.checked_out_at IS NULL
+            LIMIT 1
+            """,
+            (seat_code, reservation_id),
+        ).fetchone()
+        if assigned_to_other_guest is not None:
+            raise ValueError(f"Seat {seat_code} is already occupied")
+        connection.execute(
+            """
+            INSERT INTO seat_assignments (reservation_id, seat_code, selected_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(reservation_id) DO UPDATE SET
+                seat_code = excluded.seat_code,
+                selected_at = excluded.selected_at
+            """,
+            (reservation_id, seat_code, selected_at),
+        )
+        return connection.execute(
+            """
+            SELECT *
+            FROM seat_assignments
+            WHERE reservation_id = ?
+            """,
+            (reservation_id,),
+        ).fetchone()
+
+
+def list_active_seat_assignments() -> list[sqlite3.Row]:
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT
+                a.reservation_id,
+                a.seat_code,
+                a.selected_at,
+                r.name
+            FROM seat_assignments a
+            INNER JOIN reservations r ON r.id = a.reservation_id
+            WHERE r.checked_in_at IS NOT NULL
+              AND r.checked_out_at IS NULL
+            ORDER BY a.selected_at DESC
+            """
+        ).fetchall()
 
 
 def list_available_seats() -> list[sqlite3.Row]:

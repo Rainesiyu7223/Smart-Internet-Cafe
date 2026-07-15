@@ -1,4 +1,5 @@
 <section id="dashboard-grid" class="telemetry-grid" aria-live="polite">
+  {% if seats %}
   {% for seat in seats %}
   <article class="telemetry-card{% if not seat.received_at %} is-offline{% endif %} quality-{{ seat.quality_level | default('unknown') }}">
     <div class="telemetry-card-head">
@@ -9,7 +10,7 @@
     <div class="metric-row">
       <div>
         <span>Temperature</span>
-        <strong>{% if seat.temperature is not none %}{{ "%.1f"|format(seat.temperature) }}C{% else %}--{% endif %}</strong>
+        <strong>{% if seat.temperature is not none %}{{ "%.1f"|format(seat.temperature) }}°C{% else %}--{% endif %}</strong>
       </div>
       <div>
         <span>Humidity</span>
@@ -28,7 +29,13 @@
       </span>
       <span>Noise {% if seat.noise_level is not none %}{{ "%.1f"|format(seat.noise_level) }}{% else %}--{% endif %}</span>
     </div>
+    {% if seat.occupied %}
+    <button class="release-seat" type="button" data-seat-code="{{ seat.code }}">Release seat</button>
+    {% endif %}
     <footer>{% if seat.received_at %}Received {{ seat.received_at }}{% else %}Waiting for Raspberry Pi data{% endif %}</footer>
   </article>
   {% endfor %}
+  {% else %}
+  <p class="telemetry-empty">Connecting to the seat data service…</p>
+  {% endif %}
 </section>
