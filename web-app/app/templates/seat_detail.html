@@ -3,13 +3,18 @@
 {% block title %}{{ seat.code }} | Smart Internet Cafe{% endblock %}
 
 {% block content %}
-<section class="seat-detail-shell" data-seat-code="{{ seat.code }}">
+<section class="seat-detail-shell" data-seat-code="{{ seat.code }}" data-has-snapshot="{{ 'true' if has_snapshot else 'false' }}">
   <div class="seat-detail-hero">
     <div>
       <p class="eyebrow">Current Seat</p>
       <h1>{{ seat.code }}</h1>
     </div>
-    <a class="secondary-link" href="/checkin">Back</a>
+    <div class="seat-detail-actions">
+      <a class="secondary-link" href="/checkin">Back</a>
+      {% if reservation_id %}
+      <button id="checkout-button" class="checkout-button" type="button" data-reservation-id="{{ reservation_id }}">Check out</button>
+      {% endif %}
+    </div>
   </div>
 
   {% if data_source_error %}
@@ -22,7 +27,9 @@
     <div class="current-seat-state">
       <span>Occupancy</span>
       <strong id="seat-detail-occupied">
-        {% if seat.occupied is none %}
+        {% if data_source_error %}
+          Connecting…
+        {% elif seat.occupied is none %}
           Unknown
         {% elif seat.occupied %}
           Occupied
@@ -35,17 +42,17 @@
     <div class="metric-row">
       <div>
         <span>Temperature</span>
-        <strong id="seat-detail-temperature">{% if seat.temperature is not none %}{{ "%.1f"|format(seat.temperature) }}C{% else %}--{% endif %}</strong>
+        <strong id="seat-detail-temperature">{% if seat.temperature is not none %}{{ "%.1f"|format(seat.temperature) }}°C{% elif data_source_error %}Loading…{% else %}--{% endif %}</strong>
       </div>
       <div>
         <span>Humidity</span>
-        <strong id="seat-detail-humidity">{% if seat.humidity is not none %}{{ "%.1f"|format(seat.humidity) }}%{% else %}--{% endif %}</strong>
+        <strong id="seat-detail-humidity">{% if seat.humidity is not none %}{{ humidity_label(seat.humidity) }}{% elif data_source_error %}Loading…{% else %}--{% endif %}</strong>
       </div>
     </div>
 
     <div class="seat-detail-noise">
       <span>Noise</span>
-      <strong id="seat-detail-noise">{% if seat.noise_level is not none %}{{ "%.1f"|format(seat.noise_level) }}{% else %}--{% endif %}</strong>
+      <strong id="seat-detail-noise">{% if seat.noise_level is not none %}{{ "%.1f"|format(seat.noise_level) }}{% elif data_source_error %}Loading…{% else %}--{% endif %}</strong>
     </div>
   </article>
 </section>

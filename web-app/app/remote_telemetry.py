@@ -18,7 +18,7 @@ def get_remote_telemetry_url() -> str:
     return os.getenv("TELEMETRY_API_URL", DEFAULT_TELEMETRY_API_URL)
 
 
-def fetch_remote_telemetry() -> tuple[list[dict[str, Any]], str | None]:
+def fetch_remote_telemetry() -> tuple[list[dict[str, Any]], str | None, str | None]:
     url = get_remote_telemetry_url()
     timeout = float(os.getenv("TELEMETRY_API_TIMEOUT", "3"))
     request = urllib.request.Request(url, headers={"Accept": "application/json"})
@@ -27,10 +27,11 @@ def fetch_remote_telemetry() -> tuple[list[dict[str, Any]], str | None]:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
-        return [], f"Computer A API unavailable: {exc}"
+        return [], f"Computer A API unavailable: {exc}", None
 
     records = _extract_records(payload)
-    return [_normalize_remote_record(record) for record in records], None
+    recommended_seat = _recommended_seat(payload)
+    return [_normalize_remote_record(record) for record in records], None, recommended_seat
 
 
 def merge_remote_with_seats(
@@ -76,26 +77,72 @@ def merge_remote_with_seats(
 
 def _extract_records(payload: Any) -> list[dict[str, Any]]:
     if isinstance(payload, list):
-        return [item for item in payload if isinstance(item, dict)]
+        return _telemetry_records(payload)
     if not isinstance(payload, dict):
         return []
 
     data = payload.get("data")
     if isinstance(data, list):
-        return [item for item in data if isinstance(item, dict)]
+        return _telemetry_records(data)
     if isinstance(data, dict):
         nested = data.get("records") or data.get("seats") or data.get("result")
         if isinstance(nested, list):
-            return [item for item in nested if isinstance(item, dict)]
+            return _telemetry_records(nested)
         return [data]
 
     seats = payload.get("seats") or payload.get("records") or payload.get("result")
     if isinstance(seats, list):
-        return [item for item in seats if isinstance(item, dict)]
+        return _telemetry_records(seats)
 
     if payload.get("status") == "empty":
         return []
     return [payload]
+
+
+def _recommended_seat(payload: Any) -> str | None:
+    for item in _recommendation_sources(payload):
+        value = _first_value(
+            item,
+            "recommended_seat",
+            "recommendation_seat",
+            "recommended",
+            default=None,
+        )
+        if value is not None:
+            return normalize_seat_code(str(value))
+    return None
+
+
+def _telemetry_records(items: list[Any]) -> list[dict[str, Any]]:
+    """Exclude recommendation metadata when the API returns it in the data list."""
+    return [
+        item
+        for item in items
+        if isinstance(item, dict) and not _is_recommendation_only_record(item)
+    ]
+
+
+def _is_recommendation_only_record(record: dict[str, Any]) -> bool:
+    recommendation_keys = {"recommended_seat", "recommendation_seat", "recommended"}
+    seat_keys = {"seat_code", "code", "seat", "seat_id", "client_id"}
+    return bool(recommendation_keys.intersection(record)) and not bool(seat_keys.intersection(record))
+
+
+def _recommendation_sources(payload: Any) -> list[dict[str, Any]]:
+    """Accept recommendation metadata at the response root or as a list entry."""
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if not isinstance(payload, dict):
+        return []
+
+    sources = [payload]
+    for key in ("data", "records", "seats", "result"):
+        value = payload.get(key)
+        if isinstance(value, dict):
+            sources.append(value)
+        elif isinstance(value, list):
+            sources.extend(item for item in value if isinstance(item, dict))
+    return sources
 
 
 def _normalize_remote_record(record: dict[str, Any]) -> dict[str, Any]:
@@ -130,8 +177,7 @@ def _normalize_remote_record(record: dict[str, Any]) -> dict[str, Any]:
         "timestamp",
         default=None,
     )
-    source_timestamp = _optional_int(_first_value(record, "timestamp", "source_timestamp", default=None))
-
+    source_timestamp = _optional_int(_first_value(record, "timestamp", "source_timestamp", "time", default=None))
     return {
         "code": normalize_seat_code(str(code)),
         "client_id": _first_value(record, "client_id", default=None),
@@ -145,11 +191,12 @@ def _normalize_remote_record(record: dict[str, Any]) -> dict[str, Any]:
             _first_value(record, "noise_level", "noise", default=environment.get("noise_level"))
         ),
         "button_pressed": button_pressed,
-        "occupied": False,
+        # Occupancy is controlled by checked-in reservations in the web app.
+        "occupied": None,
         "rotary_raw_value": _optional_float(
             _first_value(record, "rotary_raw_value", default=seat_interact.get("rotary_raw_value"))
         ),
-        "received_at": _format_received_at(received_at),
+        "received_at": _format_received_at(received_at) or datetime.utcnow().isoformat(timespec="seconds"),
         "source_timestamp": source_timestamp,
     }
 

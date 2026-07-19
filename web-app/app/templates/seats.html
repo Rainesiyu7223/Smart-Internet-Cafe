@@ -3,7 +3,7 @@
 {% block title %}Seat Recommendation | Smart Internet Cafe{% endblock %}
 
 {% block content %}
-<section class="recommendation-shell">
+<section class="recommendation-shell" data-reservation-id="{{ reservation['id'] }}">
   <div class="recommendation-hero">
     <div>
       <p class="eyebrow">Seat Recommendation</p>
@@ -14,8 +14,8 @@
       </div>
     </div>
     <div class="recommendation-status">
-      <strong>Recommendation model</strong>
-      <span>Framework ready</span>
+      <strong>AI recommendation</strong>
+      <span id="recommendation-status">{% if recommended %}Ready{% else %}Loading{% endif %}</span>
     </div>
   </div>
 
@@ -24,22 +24,30 @@
       <p class="eyebrow">System Pick</p>
       <h2>Recommended seat preview</h2>
       <p class="recommendation-muted">
-        The recommendation area is ready for the next backend algorithm. It will combine live seat data such as temperature, humidity, noise, and occupancy.
+        This recommendation is calculated by the external AI service using the latest seat environment data.
       </p>
     </div>
+    <div id="recommendation-preview">
     {% if recommended %}
     <article class="recommendation-card">
-      <span>Current placeholder</span>
+      <span>Recommended</span>
       <strong>{{ recommended["code"] }}</strong>
-      <p>Algorithm result will appear here.</p>
+      <p>
+        {% if recommended.temperature is not none %}{{ "%.1f"|format(recommended.temperature) }}°C{% else %}--{% endif %}
+        ·
+        Humidity: {{ humidity_label(recommended.humidity) }}
+        ·
+        Noise {% if recommended.noise_level is not none %}{{ "%.1f"|format(recommended.noise_level) }}{% else %}--{% endif %}
+      </p>
     </article>
     {% else %}
     <article class="recommendation-card">
-      <span>No seats</span>
-      <strong>Unavailable</strong>
-      <p>Please ask staff for help.</p>
+      <span>Loading</span>
+      <strong>Connecting…</strong>
+      <p>Retrieving the latest AI recommendation.</p>
     </article>
     {% endif %}
+    </div>
   </section>
 
   <section class="manual-seat-panel">
@@ -48,19 +56,30 @@
         <p class="eyebrow">Manual Selection</p>
         <h2>Choose your seat</h2>
       </div>
-      <span>{{ seats | length }} seats</span>
+      <span id="seat-count">{% if seats %}{{ seats | length }} seats{% else %}Loading seats…{% endif %}</span>
     </div>
 
-    <div class="seat-grid selectable-seat-grid">
+    <div id="selectable-seat-grid" class="seat-grid selectable-seat-grid">
       {% for seat in seats %}
-      <button class="seat-card selectable-seat" type="button" data-seat-code="{{ seat.code }}">
+      <button class="seat-card selectable-seat" type="button" data-seat-code="{{ seat.code }}"
+        data-temperature="{{ seat.temperature if seat.temperature is not none else '' }}"
+        data-humidity="{{ seat.humidity if seat.humidity is not none else '' }}"
+        data-noise-level="{{ seat.noise_level if seat.noise_level is not none else '' }}"
+        data-occupied="{% if seat.occupied is none %}{% else %}{{ 'true' if seat.occupied else 'false' }}{% endif %}"
+        {% if seat.occupied %}disabled aria-disabled="true"{% endif %}>
         <div class="seat-code">
           <strong>{{ seat.code }}</strong>
-          <span>Choose</span>
+          <span>{% if seat.occupied %}Occupied{% else %}Choose{% endif %}</span>
         </div>
         <div class="seat-specs">
           <span>{{ seat.status | title }}</span>
         </div>
+        <span class="seat-hover-info" role="tooltip">
+          <strong>{{ seat.code }} environment</strong>
+          <span>Temperature: {% if seat.temperature is not none %}{{ "%.1f"|format(seat.temperature) }}°C{% else %}--{% endif %}</span>
+          <span>Humidity: {{ humidity_label(seat.humidity) }}</span>
+          <span>Noise: {% if seat.noise_level is not none %}{{ "%.1f"|format(seat.noise_level) }}{% else %}--{% endif %}</span>
+        </span>
       </button>
       {% endfor %}
     </div>
@@ -68,4 +87,16 @@
     <p id="seat-selection-result" class="form-result" aria-live="polite"></p>
   </section>
 </section>
+
+<div id="seat-confirm-modal" class="seat-confirm-modal" hidden>
+  <div class="seat-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="seat-confirm-title">
+    <span class="seat-confirm-badge">Confirm seat</span>
+    <h2 id="seat-confirm-title">Choose this seat?</h2>
+    <p id="seat-confirm-details"></p>
+    <div class="seat-confirm-actions">
+      <button id="seat-confirm-cancel" class="seat-confirm-cancel" type="button">Cancel</button>
+      <button id="seat-confirm-submit" type="button">Confirm selection</button>
+    </div>
+  </div>
+</div>
 {% endblock %}

@@ -9,10 +9,12 @@ cd /Users/Rain/Desktop/Project/Smart-Internet-Cafe/web-app
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python run.py
 ```
 
-Open <http://127.0.0.1:8000>.
+The app listens on all local network interfaces at port 8001. Open
+<http://127.0.0.1:8001> on this computer, or use
+`http://<your-computer-LAN-IP>:8001` from a phone on the same Wi-Fi network.
 
 ## Dashboard
 
@@ -21,7 +23,7 @@ Open <http://127.0.0.1:8000/dashboard> to view the latest A01 seat temperature a
 By default, the dashboard reads live data from Computer A:
 
 ```bash
-TELEMETRY_API_URL=http://172.20.10.2:5001/api/seat_data
+TELEMETRY_API_URL=http://192.168.0.114:5001/api/seat_data
 ```
 
 Computer A should return JSON with a `data` list, for example:
