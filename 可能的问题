@@ -1,1 +1,32 @@
-1.
+SCIoT
+●Introduce
+Kuo: Background, purposes, overview
+Hu: Hardware to backend
+Yuan: Backend to Frontend
+
+●Questions from report
+1，Why did you choose a cybercafe instead of another smart environment?
+
+2，Can you explain your system architecture?
+
+3，Why did you choose MQTT?
+MQTT is lightweight, publish-subscribe, low bandwidth, low power consumption, asynchronous communication
+
+Why not HTTP?
+HTTP is request-response.
+MQTT supports push communication and many-to-many communication.
+
+Why publish-subscribe instead of client-server?
+Publisher and subscriber are decoupled.
+Sensors do not need to know who receives the data.
+Easy to scale.
+
+4，What is AI Planning? Did you use PDDL?
+Artificial Intelligence Planning and Scheduling is a branch of 
+Artificial Intelligence devoted to the study of algorithms and 
+systems to empower intelligent agents with the ability to pursue 
+their goals.
+
+5, Is your system context-aware?
+
+●MQTT, AI planning and other part related to the course
