@@ -6,7 +6,9 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 # ==================== Backend & Database Configuration ====================
 # The Raspberry Pi's actual LAN IP address
-MQTT_BROKER = "192.168.0.165"  
+#MQTT_BROKER = "192.168.0.165"  
+
+MQTT_BROKER = "172.20.10.13"  
 MQTT_PORT = 1883
 MQTT_TOPIC = "cybercafe/seat_A1"
 
@@ -35,7 +37,11 @@ def on_message(client, userdata, msg):
         data = json.loads(payload_str)
         print(f"[📥 MQTT Received] Data fetched from {data['client_id']}")
         
+<<<<<<< Updated upstream
         # Construct time-series data points
+=======
+        
+>>>>>>> Stashed changes
         point = Point("cybercafe_telemetry") \
             .tag("client_id", data["client_id"]) \
             .field("temperature", float(data["environment"]["temperature"])) \
@@ -44,6 +50,10 @@ def on_message(client, userdata, msg):
             .field("motion_detected", int(1 if data["seat_interact"]["motion_detected"] else 0)) \
             .time(data["timestamp"])
         
+<<<<<<< Updated upstream
+=======
+        
+>>>>>>> Stashed changes
         write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
         print(f"[💾 DB Saved] Data committed successfully!")
         

@@ -4,7 +4,7 @@ import json
 TOKEN = "apiv3_kHXnnT92Gd5kGVoZSEUJ16UdgAPY80G6gnXTVneCtp8xaX2qpcAdQi6UBcPz-0HKi5swWffTjVIWXXlqPsyHuA"
 URL = "http://127.0.0.1:8086"
 
-# 尝试列出所有 buckets
+# list all buckets
 req = urllib.request.Request(f"{URL}/api/v2/buckets")
 req.add_header("Authorization", f"Token {TOKEN}")
 
